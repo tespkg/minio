@@ -168,6 +168,10 @@ type Azure struct {
 	host string
 }
 
+func NewAzure(host string) *Azure {
+	return &Azure{host: host}
+}
+
 // Name implements Gateway interface.
 func (g *Azure) Name() string {
 	return azureBackend

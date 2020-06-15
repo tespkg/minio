@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -323,4 +324,127 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	}
 
 	handleSignals()
+}
+
+
+// StartGatewayWithRouter - handler for 'minio gateway <name>'.
+func StartGatewayWithRouter(ctx *cli.Context, router *mux.Router, gw Gateway) http.Handler {
+	if gw == nil {
+		logger.FatalIf(errUnexpected, "Gateway implementation not initialized")
+		return nil
+	}
+
+	// Validate if we have access, secret set through environment.
+	globalGatewayName = gw.Name()
+	gatewayName := gw.Name()
+
+	var err error
+
+	// Handle gateway specific env
+	gatewayHandleEnvVars()
+
+	// Set system resources to maximum.
+	logger.LogIf(GlobalContext, setMaxResources())
+
+	// Set when gateway is enabled
+	globalIsGateway = true
+
+	enableConfigOps := gatewayName == "nas"
+
+	// TODO: We need to move this code with globalConfigSys.Init()
+	// for now keep it here such that "s3" gateway layer initializes
+	// itself properly when KMS is set.
+
+	// Initialize server config.
+	srvCfg := newServerConfig()
+
+	// Override any values from ENVs.
+	lookupConfigs(srvCfg)
+
+	// hold the mutex lock before a new config is assigned.
+	globalServerConfigMu.Lock()
+	globalServerConfig = srvCfg
+	globalServerConfigMu.Unlock()
+
+	// Register web router when its enabled.
+	if globalBrowserEnabled {
+		logger.FatalIf(registerWebRouter(router), "Unable to configure web browser")
+	}
+
+	// Currently only NAS and S3 gateway support encryption headers.
+	encryptionEnabled := gatewayName == "s3" || gatewayName == "nas"
+	allowSSEKMS := gatewayName == "s3" // Only S3 can support SSE-KMS (as pass-through)
+
+	// Add API router.
+	registerAPIRouter(router, encryptionEnabled, allowSSEKMS)
+
+
+	handler := criticalErrorHandler{registerHandlers(router, globalHandlers...)}
+
+	signal.Notify(globalOSSignalCh, os.Interrupt, syscall.SIGTERM)
+
+	newObject, err := gw.NewGatewayLayer(globalActiveCred)
+	if err != nil {
+		// Stop watching for any certificate changes.
+		globalTLSCerts.Stop()
+
+		globalHTTPServer.Shutdown()
+		logger.FatalIf(err, "Unable to initialize gateway backend")
+	}
+	newObject = NewGatewayLayerWithLocker(newObject)
+
+	// Once endpoints are finalized, initialize the new object api in safe mode.
+	globalObjLayerMutex.Lock()
+	globalSafeMode = true
+	globalObjectAPI = newObject
+	globalObjLayerMutex.Unlock()
+
+	// Migrate all backend configs to encrypted backend, also handles rotation as well.
+	// For "nas" gateway we need to specially handle the backend migration as well.
+	// Internally code handles migrating etcd if enabled automatically.
+	logger.FatalIf(handleEncryptedConfigBackend(newObject, enableConfigOps),
+		"Unable to handle encrypted backend for config, iam and policies")
+
+	// Calls all New() for all sub-systems.
+	newAllSubsystems()
+
+	// ****  WARNING ****
+	// Migrating to encrypted backend should happen before initialization of any
+	// sub-systems, make sure that we do not move the above codeblock elsewhere.
+	if enableConfigOps {
+		logger.FatalIf(globalConfigSys.Init(newObject), "Unable to initialize config system")
+		buckets, err := newObject.ListBuckets(GlobalContext)
+		if err != nil {
+			logger.Fatal(err, "Unable to list buckets")
+		}
+
+		logger.FatalIf(globalNotificationSys.Init(buckets, newObject), "Unable to initialize notification system")
+		// Start watching disk for reloading config, this
+		// is only enabled for "NAS" gateway.
+		globalConfigSys.WatchConfigNASDisk(GlobalContext, newObject)
+	}
+
+
+	if globalCacheConfig.Enabled {
+		// initialize the new disk cache objects.
+		var cacheAPI CacheObjectLayer
+		cacheAPI, err = newServerCacheObjects(GlobalContext, globalCacheConfig)
+		logger.FatalIf(err, "Unable to initialize disk caching")
+
+		globalObjLayerMutex.Lock()
+		globalCacheObjectAPI = cacheAPI
+		globalObjLayerMutex.Unlock()
+	}
+
+	// Verify if object layer supports
+	// - encryption
+	// - compression
+	verifyObjectLayerFeatures("gateway "+gatewayName, newObject)
+
+	// Disable safe mode operation, after all initialization is over.
+	globalObjLayerMutex.Lock()
+	globalSafeMode = false
+	globalObjLayerMutex.Unlock()
+
+	return handler
 }
