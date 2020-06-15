@@ -365,7 +365,6 @@ func StartGatewayWithRouter(router *mux.Router, gw Gateway) http.Handler {
 		// Stop watching for any certificate changes.
 		globalTLSCerts.Stop()
 
-		globalHTTPServer.Shutdown()
 		logger.FatalIf(err, "Unable to initialize gateway backend")
 	}
 	newObject = NewGatewayLayerWithLocker(newObject)
