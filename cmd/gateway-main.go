@@ -328,7 +328,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 
 
 // StartGatewayWithRouter - handler for 'minio gateway <name>'.
-func StartGatewayWithRouter(ctx *cli.Context, router *mux.Router, gw Gateway) http.Handler {
+func StartGatewayWithRouter(router *mux.Router, gw Gateway) http.Handler {
 	if gw == nil {
 		logger.FatalIf(errUnexpected, "Gateway implementation not initialized")
 		return nil
@@ -350,21 +350,6 @@ func StartGatewayWithRouter(ctx *cli.Context, router *mux.Router, gw Gateway) ht
 	globalIsGateway = true
 
 	enableConfigOps := gatewayName == "nas"
-
-	// TODO: We need to move this code with globalConfigSys.Init()
-	// for now keep it here such that "s3" gateway layer initializes
-	// itself properly when KMS is set.
-
-	// Initialize server config.
-	srvCfg := newServerConfig()
-
-	// Override any values from ENVs.
-	lookupConfigs(srvCfg)
-
-	// hold the mutex lock before a new config is assigned.
-	globalServerConfigMu.Lock()
-	globalServerConfig = srvCfg
-	globalServerConfigMu.Unlock()
 
 	// Register web router when its enabled.
 	if globalBrowserEnabled {
