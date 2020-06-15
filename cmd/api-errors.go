@@ -1660,6 +1660,8 @@ var errorCodes = errorCodeMap{
 	// Add your error structure here.
 }
 
+var ErrorCodes = errorCodes
+
 // toAPIErrorCode - Converts embedded errors. Convenience
 // function written to handle all cases where we have known types of
 // errors returned by underlying layers.
