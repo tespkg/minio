@@ -351,11 +351,6 @@ func StartGatewayWithRouter(router *mux.Router, gw Gateway) http.Handler {
 
 	enableConfigOps := gatewayName == "nas"
 
-	// Register web router when its enabled.
-	if globalBrowserEnabled {
-		logger.FatalIf(registerWebRouter(router), "Unable to configure web browser")
-	}
-
 	// Currently only NAS and S3 gateway support encryption headers.
 	encryptionEnabled := gatewayName == "s3" || gatewayName == "nas"
 	allowSSEKMS := gatewayName == "s3" // Only S3 can support SSE-KMS (as pass-through)
@@ -363,10 +358,7 @@ func StartGatewayWithRouter(router *mux.Router, gw Gateway) http.Handler {
 	// Add API router.
 	registerAPIRouter(router, encryptionEnabled, allowSSEKMS)
 
-
 	handler := criticalErrorHandler{registerHandlers(router, globalHandlers...)}
-
-	signal.Notify(globalOSSignalCh, os.Interrupt, syscall.SIGTERM)
 
 	newObject, err := gw.NewGatewayLayer(globalActiveCred)
 	if err != nil {
