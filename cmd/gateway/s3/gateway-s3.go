@@ -99,16 +99,21 @@ func s3GatewayMain(ctx *cli.Context) {
 	logger.FatalIf(minio.ValidateGatewayArguments(serverAddr, args.First()), "Invalid argument")
 
 	// Start the gateway..
-	minio.StartGateway(ctx, &S3{args.First()})
+	minio.StartGateway(ctx, &S3{host: args.First()})
 }
 
 // S3 implements Gateway.
 type S3 struct {
-	host string
+	host         string
+	bucketLookup miniogo.BucketLookupType
 }
 
 func NewS3(host string) *S3 {
 	return &S3{host: host}
+}
+
+func NewS3WithBucketLookup(host string, bucketLookup miniogo.BucketLookupType) *S3 {
+	return &S3{host: host, bucketLookup: bucketLookup}
 }
 
 // Name implements Gateway interface.
@@ -169,7 +174,7 @@ var defaultAWSCredProviders = []credentials.Provider{
 }
 
 // newS3 - Initializes a new client by auto probing S3 server signature.
-func newS3(urlStr string) (*miniogo.Core, error) {
+func newS3(urlStr string, bucketLookup miniogo.BucketLookupType) (*miniogo.Core, error) {
 	if urlStr == "" {
 		urlStr = "https://s3.amazonaws.com"
 	}
@@ -199,7 +204,7 @@ func newS3(urlStr string) (*miniogo.Core, error) {
 		Creds:        creds,
 		Secure:       secure,
 		Region:       s3utils.GetRegionFromURL(*u),
-		BucketLookup: miniogo.BucketLookupAuto,
+		BucketLookup: bucketLookup,
 	}
 
 	clnt, err := miniogo.NewWithOptions(endpoint, &options)
@@ -214,7 +219,7 @@ func newS3(urlStr string) (*miniogo.Core, error) {
 func (g *S3) NewGatewayLayer(creds auth.Credentials) (minio.ObjectLayer, error) {
 	// creds are ignored here, since S3 gateway implements chaining
 	// all credentials.
-	clnt, err := newS3(g.host)
+	clnt, err := newS3(g.host, g.bucketLookup)
 	if err != nil {
 		return nil, err
 	}
