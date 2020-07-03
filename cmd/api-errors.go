@@ -1890,6 +1890,10 @@ func toAPIErrorCode(ctx context.Context, err error) (apiErr APIErrorCode) {
 	return apiErr
 }
 
+func ToAPIErrorCode(ctx context.Context, err error) (apiErr APIErrorCode) {
+	return toAPIErrorCode(ctx, err)
+}
+
 var noError = APIError{}
 
 // toAPIError - Converts embedded errors. Convenience
