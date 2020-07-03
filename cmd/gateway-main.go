@@ -326,12 +326,11 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	handleSignals()
 }
 
-
 // StartGatewayWithRouter - handler for 'minio gateway <name>'.
-func StartGatewayWithRouter(router *mux.Router, gw Gateway) http.Handler {
+func StartGatewayWithRouter(router *mux.Router, gw Gateway) (http.Handler, ObjectLayer) {
 	if gw == nil {
 		logger.FatalIf(errUnexpected, "Gateway implementation not initialized")
-		return nil
+		return nil, nil
 	}
 
 	// Validate if we have access, secret set through environment.
@@ -400,7 +399,6 @@ func StartGatewayWithRouter(router *mux.Router, gw Gateway) http.Handler {
 		globalConfigSys.WatchConfigNASDisk(GlobalContext, newObject)
 	}
 
-
 	if globalCacheConfig.Enabled {
 		// initialize the new disk cache objects.
 		var cacheAPI CacheObjectLayer
@@ -422,5 +420,5 @@ func StartGatewayWithRouter(router *mux.Router, gw Gateway) http.Handler {
 	globalSafeMode = false
 	globalObjLayerMutex.Unlock()
 
-	return handler
+	return handler, newObject
 }
