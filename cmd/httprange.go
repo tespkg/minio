@@ -162,6 +162,11 @@ func parseRequestRangeSpec(rangeString string) (hrange *HTTPRangeSpec, err error
 	}
 }
 
+// Parse a HTTP range header value into a HTTPRangeSpec
+func ParseRequestRangeSpec(rangeString string) (hrange *HTTPRangeSpec, err error) {
+	return parseRequestRangeSpec(rangeString)
+}
+
 // String returns stringified representation of range for a particular resource size.
 func (h *HTTPRangeSpec) String(resourceSize int64) string {
 	if h == nil {
