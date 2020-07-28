@@ -161,3 +161,5 @@ func parseRequestRangeSpec(rangeString string) (hrange *HTTPRangeSpec, err error
 		return nil, fmt.Errorf("'%s' does not have valid range value", rangeString)
 	}
 }
+
+var ParseRequestRangeSpec = parseRequestRangeSpec

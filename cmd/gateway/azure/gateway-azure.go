@@ -139,9 +139,17 @@ type Azure struct {
 	host string
 }
 
+func NewAzure(host string) *Azure {
+	return &Azure{host: host}
+}
+
 // Name implements Gateway interface.
 func (g *Azure) Name() string {
 	return azureBackend
+}
+
+var muscatOdpazureCloud = azure.Environment{
+	StorageEndpointSuffix: "muscat.odpazure.om",
 }
 
 // All known cloud environments of Azure
@@ -150,6 +158,7 @@ var azureEnvs = []azure.Environment{
 	azure.USGovernmentCloud,
 	azure.ChinaCloud,
 	azure.GermanCloud,
+	muscatOdpazureCloud,
 }
 
 // NewGatewayLayer initializes azure blob storage client and returns AzureObjects.

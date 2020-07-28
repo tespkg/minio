@@ -1478,6 +1478,8 @@ var errorCodes = errorCodeMap{
 	// Add your error structure here.
 }
 
+var ErrorCodes = errorCodes
+
 // toAPIErrorCode - Converts embedded errors. Convenience
 // function written to handle all cases where we have known types of
 // errors returned by underlying layers.
@@ -1673,6 +1675,8 @@ func toAPIErrorCode(ctx context.Context, err error) (apiErr APIErrorCode) {
 	return apiErr
 }
 
+var ToAPIErrorCode = toAPIErrorCode
+
 var noError = APIError{}
 
 // toAPIError - Converts embedded errors. Convenience
@@ -1726,6 +1730,8 @@ func toAPIError(ctx context.Context, err error) APIError {
 
 	return apiErr
 }
+
+var ToAPIError = toAPIError
 
 // getAPIError provides API Error for input API error code.
 func getAPIError(code APIErrorCode) APIError {

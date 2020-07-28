@@ -593,6 +593,8 @@ func writeErrorResponse(ctx context.Context, w http.ResponseWriter, err APIError
 	writeResponse(w, err.HTTPStatusCode, encodedErrorResponse, mimeXML)
 }
 
+var WriteErrorResponse = writeErrorResponse
+
 func writeErrorResponseHeadersOnly(w http.ResponseWriter, err APIError) {
 	writeResponse(w, err.HTTPStatusCode, nil, mimeNone)
 }

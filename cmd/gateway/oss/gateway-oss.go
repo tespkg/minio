@@ -125,6 +125,10 @@ type OSS struct {
 	host string
 }
 
+func NewOSS(host string) *OSS {
+	return &OSS{host: host}
+}
+
 // Name implements Gateway interface.
 func (g *OSS) Name() string {
 	return ossBackend

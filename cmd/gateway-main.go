@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -308,4 +309,94 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	globalBootTime = UTCNow()
 
 	handleSignals()
+}
+
+// StartGatewayWithRouter - handler for 'minio gateway <name>'.
+func StartGatewayWithRouter(router *mux.Router, gw Gateway) (http.Handler, ObjectLayer) {
+	if gw == nil {
+		logger.FatalIf(errUnexpected, "Gateway implementation not initialized")
+		return nil, nil
+	}
+
+	// Validate if we have access, secret set through environment.
+	gatewayName := gw.Name()
+
+	// Check and load TLS certificates.
+	var err error
+	globalPublicCerts, globalTLSCerts, globalIsSSL, err = getTLSConfig()
+	logger.FatalIf(err, "Invalid TLS certificate file")
+
+	handleCommonEnvVars()
+	handleGatewayEnvVars()
+
+	// Set system resources to maximum.
+	logger.LogIf(context.Background(), setMaxResources())
+
+	// Currently only NAS and S3 gateway support encryption headers.
+	encryptionEnabled := gatewayName == "s3" || gatewayName == "nas"
+
+	// Add API router.
+	registerAPIRouter(router, encryptionEnabled)
+
+	// !!! Do not move this block !!!
+	// For all gateways, the config needs to be loaded from env
+	// prior to initializing the gateway layer
+	{
+		// Initialize server config.
+		srvCfg := newServerConfig()
+
+		// Override any values from ENVs.
+		srvCfg.loadFromEnvs()
+
+		// Load values to cached global values.
+		srvCfg.loadToCachedConfigs()
+
+		// hold the mutex lock before a new config is assigned.
+		globalServerConfigMu.Lock()
+		globalServerConfig = srvCfg
+		globalServerConfigMu.Unlock()
+	}
+
+	handler := criticalErrorHandler{registerHandlers(router, globalHandlers...)}
+
+	newObject, err := gw.NewGatewayLayer(globalServerConfig.GetCredential())
+	if err != nil {
+		// Stop watching for any certificate changes.
+		globalTLSCerts.Stop()
+		logger.FatalIf(err, "Unable to initialize gateway backend")
+	}
+
+	enableConfigOps := gatewayName == "nas"
+
+	if enableConfigOps {
+		// Create a new config system.
+		globalConfigSys = NewConfigSys()
+
+		// Load globalServerConfig from etcd
+		logger.LogIf(context.Background(), globalConfigSys.Init(newObject))
+	}
+
+	var cacheConfig = globalServerConfig.GetCacheConfig()
+	if len(cacheConfig.Drives) > 0 {
+		var err error
+		// initialize the new disk cache objects.
+		globalCacheObjectAPI, err = newServerCacheObjects(cacheConfig)
+		logger.FatalIf(err, "Unable to initialize disk caching")
+	}
+
+	// Re-enable logging
+	logger.Disable = false
+
+	// Create new IAM system.
+	globalIAMSys = NewIAMSys()
+
+	// Create new policy system.
+	globalPolicySys = NewPolicySys()
+
+	// Once endpoints are finalized, initialize the new object api.
+	globalObjLayerMutex.Lock()
+	globalObjectAPI = newObject
+	globalObjLayerMutex.Unlock()
+
+	return handler, newObject
 }
