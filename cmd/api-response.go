@@ -326,6 +326,8 @@ func generateListBucketsResponse(buckets []BucketInfo) ListBucketsResponse {
 	return data
 }
 
+var GenerateListBucketsResponse = generateListBucketsResponse
+
 // generates an ListObjectsV1 response for the said bucket with other enumerated options.
 func generateListObjectsV1Response(bucket, prefix, marker, delimiter, encodingType string, maxKeys int, resp ListObjectsInfo) ListObjectsResponse {
 	var contents []Object
@@ -554,6 +556,8 @@ func writeSuccessResponseXML(w http.ResponseWriter, response []byte) {
 	writeResponse(w, http.StatusOK, response, mimeXML)
 }
 
+var WriteSuccessResponseXML = writeSuccessResponseXML
+
 // writeSuccessNoContent writes success headers with http status 204
 func writeSuccessNoContent(w http.ResponseWriter) {
 	writeResponse(w, http.StatusNoContent, nil, mimeNone)
@@ -568,6 +572,8 @@ func writeRedirectSeeOther(w http.ResponseWriter, location string) {
 func writeSuccessResponseHeadersOnly(w http.ResponseWriter) {
 	writeResponse(w, http.StatusOK, nil, mimeNone)
 }
+
+var WriteSuccessResponseHeadersOnly = writeSuccessResponseHeadersOnly
 
 // writeErrorRespone writes error headers
 func writeErrorResponse(ctx context.Context, w http.ResponseWriter, err APIError, reqURL *url.URL, browser bool) {

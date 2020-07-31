@@ -23,6 +23,7 @@ import (
 const (
 	// Response request id.
 	responseRequestIDKey = "x-amz-request-id"
+	ResponseRequestIDKey = responseRequestIDKey
 	// Deployment id.
 	responseDeploymentIDKey = "x-minio-deployment-id"
 )

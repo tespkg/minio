@@ -89,6 +89,8 @@ var globalHandlers = []HandlerFunc{
 	// Add new handlers here.
 }
 
+var GlobalHandlers = globalHandlers
+
 // configureServer handler returns final handler for the http server.
 func configureServerHandler(endpoints EndpointList) (http.Handler, error) {
 	// Initialize router. `SkipClean(true)` stops gorilla/mux from

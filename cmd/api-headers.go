@@ -34,6 +34,8 @@ func mustGetRequestID(t time.Time) string {
 	return fmt.Sprintf("%X", t.UnixNano())
 }
 
+var MustGetRequestID = mustGetRequestID
+
 // Write http common headers
 func setCommonHeaders(w http.ResponseWriter) {
 	w.Header().Set("Server", "MinIO/"+ReleaseTag)
@@ -56,6 +58,8 @@ func encodeResponse(response interface{}) []byte {
 	e.Encode(response)
 	return bytesBuffer.Bytes()
 }
+
+var EncodeResponse = encodeResponse
 
 // Encodes the response headers into JSON format.
 func encodeResponseJSON(response interface{}) []byte {
