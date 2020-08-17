@@ -309,11 +309,7 @@ func ossToObjectError(err error, params ...string) error {
 	case "NoSuchBucket":
 		err = minio.BucketNotFound{Bucket: bucket}
 	case "NoSuchKey":
-		if object != "" {
-			err = minio.ObjectNotFound{Bucket: bucket, Object: object}
-		} else {
-			err = minio.BucketNotFound{Bucket: bucket}
-		}
+		err = notFoundErr(ossErr, bucket, object)
 	case "InvalidObjectName":
 		err = minio.ObjectNameInvalid{Bucket: bucket, Object: object}
 	case "AccessDenied":
@@ -326,8 +322,26 @@ func ossToObjectError(err error, params ...string) error {
 		err = minio.SignatureDoesNotMatch{}
 	case "InvalidPart":
 		err = minio.InvalidPart{}
+	default:
+		if er := notFoundErr(ossErr, bucket, object); er != nil {
+			err = er
+		}
 	}
 
+	return err
+}
+
+func notFoundErr(ossErr oss.ServiceError, bucket, object string) (err error) {
+	if ossErr.StatusCode == http.StatusNotFound && ossErr.Code == "" {
+		ossErr.Code = "NoSuchKey"
+	}
+	if ossErr.Code == "NoSuchKey" {
+		if object != "" {
+			err = minio.ObjectNotFound{Bucket: bucket, Object: object}
+		} else {
+			err = minio.BucketNotFound{Bucket: bucket}
+		}
+	}
 	return err
 }
 
