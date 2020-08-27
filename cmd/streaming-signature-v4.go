@@ -169,6 +169,8 @@ func newSignV4ChunkedReader(req *http.Request) (io.ReadCloser, APIErrorCode) {
 	}, ErrNone
 }
 
+var NewSignV4ChunkedReader = newSignV4ChunkedReader
+
 // Represents the overall state that is required for decoding a
 // AWS Signature V4 chunked reader.
 type s3ChunkedReader struct {
