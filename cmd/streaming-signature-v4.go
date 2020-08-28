@@ -166,10 +166,18 @@ func newSignV4ChunkedReader(req *http.Request) (io.ReadCloser, APIErrorCode) {
 		region:            region,
 		chunkSHA256Writer: sha256.New(),
 		state:             readChunkHeader,
+		verifyChunk:       true,
 	}, ErrNone
 }
 
-var NewSignV4ChunkedReader = newSignV4ChunkedReader
+func NewUnverifiedV4ChunkedReader(req *http.Request) (io.ReadCloser, APIErrorCode) {
+	r, errCode := newSignV4ChunkedReader(req)
+	if errCode != ErrNone {
+		return nil, errCode
+	}
+	r.(*s3ChunkedReader).verifyChunk = false
+	return r, ErrNone
+}
 
 // Represents the overall state that is required for decoding a
 // AWS Signature V4 chunked reader.
@@ -185,6 +193,7 @@ type s3ChunkedReader struct {
 	chunkSHA256Writer hash.Hash // Calculates sha256 of chunk data.
 	n                 uint64    // Unread bytes in chunk
 	err               error
+	verifyChunk       bool
 }
 
 // Read chunk reads the chunk token signature portion.
@@ -297,18 +306,20 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 				continue
 			}
 		case verifyChunk:
-			// Calculate the hashed chunk.
-			hashedChunk := hex.EncodeToString(cr.chunkSHA256Writer.Sum(nil))
-			// Calculate the chunk signature.
-			newSignature := getChunkSignature(cr.cred, cr.seedSignature, cr.region, cr.seedDate, hashedChunk)
-			if !compareSignatureV4(cr.chunkSignature, newSignature) {
-				// Chunk signature doesn't match we return signature does not match.
-				cr.err = errSignatureMismatch
-				return 0, cr.err
+			if cr.verifyChunk {
+				// Calculate the hashed chunk.
+				hashedChunk := hex.EncodeToString(cr.chunkSHA256Writer.Sum(nil))
+				// Calculate the chunk signature.
+				newSignature := getChunkSignature(cr.cred, cr.seedSignature, cr.region, cr.seedDate, hashedChunk)
+				if !compareSignatureV4(cr.chunkSignature, newSignature) {
+					// Chunk signature doesn't match we return signature does not match.
+					cr.err = errSignatureMismatch
+					return 0, cr.err
+				}
+				// Newly calculated signature becomes the seed for the next chunk
+				// this follows the chaining.
+				cr.seedSignature = newSignature
 			}
-			// Newly calculated signature becomes the seed for the next chunk
-			// this follows the chaining.
-			cr.seedSignature = newSignature
 			cr.chunkSHA256Writer.Reset()
 			if cr.lastChunk {
 				cr.state = eofChunk
