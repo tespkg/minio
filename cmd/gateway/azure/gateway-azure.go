@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"path"
 	"sort"
@@ -191,7 +192,14 @@ func (g *Azure) NewGatewayLayer(creds auth.Credentials) (minio.ObjectLayer, erro
 	}
 
 	c.AddToUserAgent(fmt.Sprintf("APN/1.0 MinIO/1.0 MinIO/%s", minio.Version))
-	c.HTTPClient = &http.Client{Transport: minio.NewCustomHTTPTransport()}
+	transport := minio.NewCustomHTTPTransport()
+	transport.DialContext = (&net.Dialer{
+		KeepAlive: 60 * time.Minute,
+	}).DialContext
+	transport.TLSHandshakeTimeout = 0
+	transport.ExpectContinueTimeout = 0
+	transport.MaxIdleConnsPerHost = 24
+	c.HTTPClient = &http.Client{Transport: transport}
 
 	return &azureObjects{
 		client: c.GetBlobService(),
