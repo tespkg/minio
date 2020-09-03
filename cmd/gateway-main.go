@@ -332,6 +332,8 @@ func StartGatewayWithRouter(router *mux.Router, gw Gateway) (http.Handler, Objec
 	// Set system resources to maximum.
 	logger.LogIf(context.Background(), setMaxResources())
 
+	initNSLock(false) // Enable local namespace lock.
+
 	// Currently only NAS and S3 gateway support encryption headers.
 	encryptionEnabled := gatewayName == "s3" || gatewayName == "nas"
 

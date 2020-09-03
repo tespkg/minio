@@ -98,6 +98,10 @@ type NAS struct {
 	path string
 }
 
+func NewNAS(path string) *NAS {
+	return &NAS{path: path}
+}
+
 // Name implements Gateway interface.
 func (g *NAS) Name() string {
 	return nasBackend
