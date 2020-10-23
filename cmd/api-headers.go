@@ -136,3 +136,5 @@ func setObjectHeaders(w http.ResponseWriter, objInfo ObjectInfo, rs *HTTPRangeSp
 
 	return nil
 }
+
+var SetObjectHeaders = setObjectHeaders
