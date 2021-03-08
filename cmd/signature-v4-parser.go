@@ -47,6 +47,16 @@ func (c credentialHeader) getScope() string {
 	}, "/")
 }
 
+type CredentialHeader struct {
+	AccessKey string
+	scope     struct {
+		date    time.Time
+		region  string
+		service string
+		request string
+	}
+}
+
 func getReqAccessKeyV4(r *http.Request, region string, stype serviceType) (auth.Credentials, bool, APIErrorCode) {
 	ch, err := parseCredentialHeader("Credential="+r.URL.Query().Get("X-Amz-Credential"), region, stype)
 	if err != ErrNone {
@@ -63,6 +73,7 @@ func getReqAccessKeyV4(r *http.Request, region string, stype serviceType) (auth.
 	}
 	return checkKeyValid(ch.accessKey)
 }
+
 
 // parse credentialHeader string into its structured form.
 func parseCredentialHeader(credElement string, region string, stype serviceType) (ch credentialHeader, aec APIErrorCode) {
@@ -116,6 +127,11 @@ func parseCredentialHeader(credElement string, region string, stype serviceType)
 	}
 	cred.scope.request = credElements[3]
 	return cred, ErrNone
+}
+
+func ParseCredentialHeader(credElement string, region string, stype ServiceType) (ch CredentialHeader, aec APIErrorCode) {
+	h, e := parseCredentialHeader(credElement, region, stype)
+	return CredentialHeader{AccessKey: h.accessKey, scope: h.scope}, e
 }
 
 // Parse signature from signature tag.

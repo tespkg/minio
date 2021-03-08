@@ -93,6 +93,17 @@ const (
 	authTypeSTS
 )
 
+const AuthTypeUnknown = authTypeUnknown
+const AuthTypeAnonymous = authTypeAnonymous
+const AuthTypePresigned = authTypePresigned
+const AuthTypePresignedV2 = authTypePresignedV2
+const AuthTypePostPolicy = authTypePostPolicy
+const AuthTypeStreamingSigned = authTypeStreamingSigned
+const AuthTypeSigned = authTypeSigned
+const AuthTypeSignedV2 = authTypeSignedV2
+const AuthTypeJWT = authTypeJWT
+const AuthTypeSTS = authTypeSTS
+
 // Get request authentication type.
 func getRequestAuthType(r *http.Request) authType {
 	if isRequestSignatureV2(r) {
@@ -116,6 +127,8 @@ func getRequestAuthType(r *http.Request) authType {
 	}
 	return authTypeUnknown
 }
+
+var GetRequestAuthType = getRequestAuthType
 
 // checkAdminRequestAuthType checks whether the request is a valid signature V2 or V4 request.
 // It does not accept presigned or JWT or anonymous requests.
@@ -309,7 +322,7 @@ func checkRequestAuthType(ctx context.Context, r *http.Request, action policy.Ac
 // Verify if request has valid AWS Signature Version '2'.
 func isReqAuthenticatedV2(r *http.Request) (s3Error APIErrorCode) {
 	if isRequestSignatureV2(r) {
-		return doesSignV2Match(r)
+		return doesSignV2Match(r, nil)
 	}
 	return doesPresignV2SignatureMatch(r)
 }
@@ -318,7 +331,7 @@ func reqSignatureV4Verify(r *http.Request, region string, stype serviceType) (s3
 	sha256sum := getContentSha256Cksum(r, stype)
 	switch {
 	case isRequestSignatureV4(r):
-		return doesSignatureMatch(sha256sum, r, region, stype)
+		return doesSignatureMatch(sha256sum, r, region, stype, nil)
 	case isRequestPresignedSignatureV4(r):
 		return doesPresignedSignatureMatch(sha256sum, r, region, stype)
 	default:

@@ -237,9 +237,12 @@ func validateV2AuthHeader(r *http.Request) (auth.Credentials, APIErrorCode) {
 	return cred, ErrNone
 }
 
-func doesSignV2Match(r *http.Request) APIErrorCode {
+func doesSignV2Match(r *http.Request, validateV2AuthHeaderFunc func(r *http.Request) (auth.Credentials, APIErrorCode)) APIErrorCode {
 	v2Auth := r.Header.Get("Authorization")
-	cred, apiError := validateV2AuthHeader(r)
+	if validateV2AuthHeaderFunc == nil {
+		validateV2AuthHeaderFunc = validateV2AuthHeader
+	}
+	cred, apiError := validateV2AuthHeaderFunc(r)
 	if apiError != ErrNone {
 		return apiError
 	}
@@ -272,6 +275,10 @@ func doesSignV2Match(r *http.Request) APIErrorCode {
 		return ErrSignatureDoesNotMatch
 	}
 	return ErrNone
+}
+
+func DoesSignatureV2Match(r *http.Request, validateV2AuthHeaderFunc func(r *http.Request) (auth.Credentials, APIErrorCode)) APIErrorCode {
+	return doesSignV2Match(r, validateV2AuthHeader)
 }
 
 func calculateSignatureV2(stringToSign string, secret string) string {

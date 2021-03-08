@@ -101,6 +101,8 @@ func getContentSha256Cksum(r *http.Request, stype serviceType) string {
 	return defaultSha256Cksum
 }
 
+var GetContentSha256Cksum = getContentSha256Cksum
+
 // isValidRegion - verify if incoming region value is valid with configured Region.
 func isValidRegion(reqRegion string, confRegion string) bool {
 	if confRegion == "" {

@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"crypto/subtle"
 	"encoding/hex"
+	"github.com/minio/minio/pkg/auth"
 	"net/http"
 	"net/url"
 	"sort"
@@ -47,6 +48,8 @@ const (
 )
 
 type serviceType string
+
+type ServiceType = serviceType
 
 const (
 	serviceS3  serviceType = "s3"
@@ -320,7 +323,7 @@ func doesPresignedSignatureMatch(hashedPayload string, r *http.Request, region s
 // doesSignatureMatch - Verify authorization header with calculated header in accordance with
 //     - http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html
 // returns ErrNone if signature matches.
-func doesSignatureMatch(hashedPayload string, r *http.Request, region string, stype serviceType) APIErrorCode {
+func doesSignatureMatch(hashedPayload string, r *http.Request, region string, stype serviceType, checkKeyValidFunc func(accessKey string) (auth.Credentials, bool, APIErrorCode)) APIErrorCode {
 	// Copy request.
 	req := *r
 
@@ -339,7 +342,10 @@ func doesSignatureMatch(hashedPayload string, r *http.Request, region string, st
 		return errCode
 	}
 
-	cred, _, s3Err := checkKeyValid(signV4Values.Credential.accessKey)
+	if checkKeyValidFunc == nil {
+		checkKeyValidFunc = checkKeyValid
+	}
+	cred, _, s3Err := checkKeyValidFunc(signV4Values.Credential.accessKey)
 	if s3Err != ErrNone {
 		return s3Err
 	}
@@ -381,4 +387,8 @@ func doesSignatureMatch(hashedPayload string, r *http.Request, region string, st
 
 	// Return error none.
 	return ErrNone
+}
+
+func DoesSignatureV4Match(hashedPayload string, r *http.Request, region string, stype serviceType, checkKeyValidFunc func(accessKey string) (auth.Credentials, bool, APIErrorCode)) APIErrorCode {
+	return doesSignatureMatch(hashedPayload, r, region, stype, checkKeyValidFunc)
 }
