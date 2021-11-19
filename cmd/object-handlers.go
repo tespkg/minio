@@ -33,8 +33,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	miniogo "github.com/minio/minio-go"
-	"github.com/minio/minio-go/pkg/encrypt"
+	miniogo "github.com/minio/minio-go/v6"
+	"github.com/minio/minio-go/v6/pkg/encrypt"
 	"github.com/minio/minio/cmd/crypto"
 	"github.com/minio/minio/cmd/logger"
 	"github.com/minio/minio/pkg/dns"
@@ -994,8 +994,12 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 			writeErrorResponse(ctx, w, toAPIError(ctx, rerr), r.URL, guessIsBrowserReq(r))
 			return
 		}
-		remoteObjInfo, rerr := client.PutObject(dstBucket, dstObject, srcInfo.Reader,
-			srcInfo.Size, "", "", srcInfo.UserDefined, dstOpts.ServerSideEncryption)
+		opts := miniogo.PutObjectOptions{
+			UserMetadata:         srcInfo.UserDefined,
+			ServerSideEncryption: dstOpts.ServerSideEncryption,
+		}
+		remoteObjInfo, rerr := client.PutObjectWithContext(ctx, dstBucket, dstObject, srcInfo.Reader,
+			srcInfo.Size, "", "", opts)
 		if rerr != nil {
 			writeErrorResponse(ctx, w, toAPIError(ctx, rerr), r.URL, guessIsBrowserReq(r))
 			return
