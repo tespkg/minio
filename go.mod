@@ -4,7 +4,6 @@ go 1.12
 
 require (
 	cloud.google.com/go v0.37.2
-	contrib.go.opencensus.io/exporter/ocagent v0.4.10 // indirect
 	github.com/Azure/azure-sdk-for-go v27.0.0+incompatible
 	github.com/Azure/go-autorest v11.7.0+incompatible
 	github.com/DataDog/zstd v1.3.5 // indirect
@@ -25,21 +24,12 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/golang/snappy v0.0.1
 	github.com/gomodule/redigo v2.0.0+incompatible
-	github.com/gopherjs/gopherjs v0.0.0-20190328170749-bb2674552d8f // indirect
 	github.com/gorilla/handlers v1.4.0
 	github.com/gorilla/mux v1.7.0
 	github.com/gorilla/rpc v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway v1.8.5 // indirect
-	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
-	github.com/hashicorp/go-msgpack v0.5.4 // indirect
-	github.com/hashicorp/go-rootcerts v1.0.0 // indirect
-	github.com/hashicorp/raft v1.0.1 // indirect
 	github.com/hashicorp/vault v1.1.0
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
-	github.com/jcmturner/gofork v0.0.0-20190328161633-dc7c13fece03 // indirect
-	github.com/json-iterator/go v1.1.6
-	github.com/klauspost/compress v1.4.1 // indirect
-	github.com/klauspost/cpuid v1.2.0 // indirect
+	github.com/json-iterator/go v1.1.9
 	github.com/klauspost/pgzip v1.2.1
 	github.com/klauspost/readahead v1.3.0
 	github.com/klauspost/reedsolomon v1.9.1
@@ -53,18 +43,15 @@ require (
 	github.com/minio/highwayhash v1.0.0
 	github.com/minio/lsync v0.0.0-20190207022115-a4e43e3d0887
 	github.com/minio/mc v0.0.0-20190401030144-a1355e50e2e8
-	github.com/minio/minio-go v0.0.0-20190327203652-5325257a208f
+	github.com/minio/minio-go/v6 v6.0.58-0.20200611233712-3da267908ecf
 	github.com/minio/parquet-go v0.0.0-20190318185229-9d767baf1679
-	github.com/minio/sha256-simd v0.0.0-20190328051042-05b4dd3047e5
+	github.com/minio/sha256-simd v0.1.1
 	github.com/minio/sio v0.0.0-20190118043801-035b4ef8c449
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/nats-io/go-nats v1.7.2 // indirect
 	github.com/nats-io/go-nats-streaming v0.4.2
 	github.com/nats-io/nats v1.7.2
-	github.com/nats-io/nats-streaming-server v0.14.1 // indirect
 	github.com/nats-io/nkeys v0.0.2 // indirect
-	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/ncw/directio v1.0.5
 	github.com/nsqio/go-nsq v1.0.7
 	github.com/pkg/profile v1.3.0
@@ -73,8 +60,6 @@ require (
 	github.com/rs/cors v1.6.0
 	github.com/segmentio/go-prompt v1.2.1-0.20161017233205-f0d19b6901ad
 	github.com/skyrings/skyring-common v0.0.0-20160929130248-d1c0bb1cbd5e
-	github.com/smartystreets/assertions v0.0.0-20190401211740-f487f9de1cd3 // indirect
-	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/streadway/amqp v0.0.0-20190402114354-16ed540749f6
 	github.com/tidwall/gjson v1.2.1
 	github.com/tidwall/pretty v0.0.0-20190325153808-1166b9ac2b65 // indirect
@@ -83,13 +68,9 @@ require (
 	go.uber.org/atomic v1.3.2
 	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
 	golang.org/x/sys v0.0.0-20190522044717-8097e1b27ff5
-	golang.org/x/text v0.3.2 // indirect
-	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	google.golang.org/api v0.3.0
 	gopkg.in/Shopify/sarama.v1 v1.20.0
-	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 	gopkg.in/jcmturner/goidentity.v2 v2.0.0 // indirect
 	gopkg.in/olivere/elastic.v5 v5.0.80
 	gopkg.in/yaml.v2 v2.2.2

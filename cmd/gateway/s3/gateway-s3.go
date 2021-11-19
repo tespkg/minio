@@ -27,12 +27,12 @@ import (
 	"time"
 
 	"github.com/minio/cli"
-	miniogo "github.com/minio/minio-go"
-	"github.com/minio/minio-go/pkg/credentials"
+	miniogo "github.com/minio/minio-go/v6"
+	"github.com/minio/minio-go/v6/pkg/credentials"
 	minio "github.com/minio/minio/cmd"
 
-	"github.com/minio/minio-go/pkg/encrypt"
-	"github.com/minio/minio-go/pkg/s3utils"
+	"github.com/minio/minio-go/v6/pkg/encrypt"
+	"github.com/minio/minio-go/v6/pkg/s3utils"
 	"github.com/minio/minio/cmd/logger"
 	"github.com/minio/minio/pkg/auth"
 	"github.com/minio/minio/pkg/policy"
@@ -131,16 +131,29 @@ func s3GatewayMain(ctx *cli.Context) {
 	logger.FatalIf(minio.ValidateGatewayArguments(ctx.GlobalString("address"), args.First()), "Invalid argument")
 
 	// Start the gateway..
-	minio.StartGateway(ctx, &S3{args.First()})
+	minio.StartGateway(ctx, &S3{host: args.First()})
 }
 
 // S3 implements Gateway.
 type S3 struct {
-	host string
+	host      string
+	transport http.RoundTripper
 }
 
-func NewS3(host string) *S3 {
-	return &S3{host: host}
+type S3Option func(*S3)
+
+func S3Transport(transport http.RoundTripper) S3Option {
+	return func(s3 *S3) {
+		s3.transport = transport
+	}
+}
+
+func NewS3(host string, opts ...S3Option) *S3 {
+	s3 := &S3{host: host}
+	for _, opt := range opts {
+		opt(s3)
+	}
+	return s3
 }
 
 // Name implements Gateway interface.
@@ -209,7 +222,7 @@ var defaultAWSCredProviders = []credentials.Provider{
 }
 
 // newS3 - Initializes a new client by auto probing S3 server signature.
-func newS3(urlStr string) (*miniogo.Core, error) {
+func newS3(urlStr string, transport http.RoundTripper) (*miniogo.Core, error) {
 	if urlStr == "" {
 		urlStr = "https://s3.amazonaws.com"
 	}
@@ -235,7 +248,11 @@ func newS3(urlStr string) (*miniogo.Core, error) {
 	}
 
 	// Set custom transport
-	clnt.SetCustomTransport(minio.NewCustomHTTPTransport())
+	if transport == nil {
+		clnt.SetCustomTransport(minio.NewCustomHTTPTransport())
+	} else {
+		clnt.SetCustomTransport(transport)
+	}
 
 	probeBucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "probe-bucket-sign-")
 	// Check if the provided keys are valid.
@@ -250,7 +267,7 @@ func newS3(urlStr string) (*miniogo.Core, error) {
 func (g *S3) NewGatewayLayer(creds auth.Credentials) (minio.ObjectLayer, error) {
 	// creds are ignored here, since S3 gateway implements chaining
 	// all credentials.
-	clnt, err := newS3(g.host)
+	clnt, err := newS3(g.host, g.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +443,7 @@ func (l *s3Objects) GetObject(ctx context.Context, bucket string, key string, st
 			return minio.ErrorRespToObjectError(err, bucket, key)
 		}
 	}
-	object, _, err := l.Client.GetObject(bucket, key, opts)
+	object, _, _, err := l.Client.GetObjectWithContext(ctx, bucket, key, opts)
 	if err != nil {
 		return minio.ErrorRespToObjectError(err, bucket, key)
 	}
@@ -454,7 +471,13 @@ func (l *s3Objects) GetObjectInfo(ctx context.Context, bucket string, object str
 // PutObject creates a new object with the incoming data,
 func (l *s3Objects) PutObject(ctx context.Context, bucket string, object string, r *minio.PutObjReader, opts minio.ObjectOptions) (objInfo minio.ObjectInfo, err error) {
 	data := r.Reader
-	oi, err := l.Client.PutObject(bucket, object, data, data.Size(), data.MD5Base64String(), data.SHA256HexString(), minio.ToMinioClientMetadata(opts.UserDefined), opts.ServerSideEncryption)
+
+	putOpts := miniogo.PutObjectOptions{
+		UserMetadata:         opts.UserDefined,
+		ServerSideEncryption: opts.ServerSideEncryption,
+		//SendContentMd5:       true,
+	}
+	oi, err := l.Client.PutObjectWithContext(ctx, bucket, object, data, data.Size(), data.MD5Base64String(), data.SHA256HexString(), putOpts)
 	if err != nil {
 		return objInfo, minio.ErrorRespToObjectError(err, bucket, object)
 	}
@@ -536,7 +559,7 @@ func (l *s3Objects) NewMultipartUpload(ctx context.Context, bucket string, objec
 // PutObjectPart puts a part of object in bucket
 func (l *s3Objects) PutObjectPart(ctx context.Context, bucket string, object string, uploadID string, partID int, r *minio.PutObjReader, opts minio.ObjectOptions) (pi minio.PartInfo, e error) {
 	data := r.Reader
-	info, err := l.Client.PutObjectPart(bucket, object, uploadID, partID, data, data.Size(), data.MD5Base64String(), data.SHA256HexString(), opts.ServerSideEncryption)
+	info, err := l.Client.PutObjectPartWithContext(ctx, bucket, object, uploadID, partID, data, data.Size(), data.MD5Base64String(), data.SHA256HexString(), opts.ServerSideEncryption)
 	if err != nil {
 		return pi, minio.ErrorRespToObjectError(err, bucket, object)
 	}
@@ -578,7 +601,7 @@ func (l *s3Objects) CopyObjectPart(ctx context.Context, srcBucket, srcObject, de
 
 // ListObjectParts returns all object parts for specified object in specified bucket
 func (l *s3Objects) ListObjectParts(ctx context.Context, bucket string, object string, uploadID string, partNumberMarker int, maxParts int, opts minio.ObjectOptions) (lpi minio.ListPartsInfo, e error) {
-	result, err := l.Client.ListObjectParts(bucket, object, uploadID, partNumberMarker, maxParts)
+	result, err := l.Client.ListObjectParts(ctx, bucket, object, uploadID, partNumberMarker, maxParts)
 	if err != nil {
 		return lpi, minio.ErrorRespToObjectError(err, bucket, object)
 	}
