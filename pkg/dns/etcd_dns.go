@@ -26,10 +26,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/minio/minio-go/v6/pkg/set"
-
 	"github.com/coredns/coredns/plugin/etcd/msg"
-	etcd "github.com/coreos/etcd/clientv3"
+	"github.com/minio/minio-go/v6/pkg/set"
+	etcd "github.com/minio/minio/pkg/coreos/etcd/clientv3"
 )
 
 // ErrNoEntriesFound - Indicates no entries were found for the given key (directory)

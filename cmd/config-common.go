@@ -23,8 +23,8 @@ import (
 	"fmt"
 	"time"
 
-	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/minio/minio/cmd/logger"
+	etcd "github.com/minio/minio/pkg/coreos/etcd/clientv3"
 	"github.com/minio/minio/pkg/hash"
 )
 

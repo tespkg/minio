@@ -26,7 +26,6 @@ import (
 	"strings"
 	"time"
 
-	etcd "github.com/coreos/etcd/clientv3"
 	dns2 "github.com/miekg/dns"
 	"github.com/minio/cli"
 	"github.com/minio/minio-go/v6/pkg/set"
@@ -34,6 +33,7 @@ import (
 	"github.com/minio/minio/cmd/logger/target/console"
 	"github.com/minio/minio/cmd/logger/target/http"
 	"github.com/minio/minio/pkg/auth"
+	etcd "github.com/minio/minio/pkg/coreos/etcd/clientv3"
 	"github.com/minio/minio/pkg/dns"
 	xnet "github.com/minio/minio/pkg/net"
 )

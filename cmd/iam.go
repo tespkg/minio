@@ -24,10 +24,10 @@ import (
 	"sync"
 	"time"
 
-	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/minio/minio-go/v6/pkg/set"
 	"github.com/minio/minio/cmd/logger"
 	"github.com/minio/minio/pkg/auth"
+	etcd "github.com/minio/minio/pkg/coreos/etcd/clientv3"
 	iampolicy "github.com/minio/minio/pkg/iam/policy"
 	"github.com/minio/minio/pkg/madmin"
 )

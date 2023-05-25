@@ -26,8 +26,8 @@ import (
 	"reflect"
 	"sync"
 
-	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/fatih/structs"
+	etcd "github.com/minio/minio/pkg/coreos/etcd/clientv3"
 	"github.com/minio/minio/pkg/safe"
 )
 
